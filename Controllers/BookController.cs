@@ -8,30 +8,44 @@ namespace BookLibraryAPI.Controllers
     [Route("api/[controller]")]
     public class BookController : ControllerBase
     {
-        private readonly BookService _bookService;
-        public BookController(BookService bookService) => _bookService = bookService;
+        private readonly LibraryContext _context;
+        public BookController(LibraryContext context)
+        {
+            _context = context;
+        }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Book>> GetAll() =>Ok(_bookService.GetAll());
+        public ActionResult<IEnumerable<Book>> GetAll() => Ok(_context.Books);
 
         [HttpGet("Id")]
         public ActionResult<Book> GetById(int id)
         {
-            var book = _bookService.GetById(id);
+            var book = _context.Books.Find(id);
             return book != null ? Ok(book) : NotFound();
         }
 
         [HttpPost]
-        public ActionResult<Book> Add(Book book)
+        public ActionResult<Book> Add(Book newBook)
         {
-            var addedBook = _bookService.Add(book);
-            return CreatedAtAction(nameof(GetById), new { id = addedBook.Id }, addedBook);
+            _context.Books.Add(newBook);
+            _context.SaveChanges();
+
+            return CreatedAtAction(nameof(GetById), new { id = newBook.Id }, newBook);
         }
 
         [HttpDelete]
         public ActionResult DeleteById(int id)
         {
-            return _bookService.Delete(id) ? NoContent() : NotFound();
+            var book = _context.Books.Find(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            _context.Books.Remove(book);
+            _context.SaveChanges();
+
+            return NoContent();
         }
     }
 }
